@@ -1,0 +1,6 @@
+pandas
+numpy
+sqlalchemy
+python-dateutil
+pymysql
+psycopg2-binary
