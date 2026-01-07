@@ -2,39 +2,39 @@
 
 
 
-\## Section 1: Schema Overview (Text Format)
+\## Section 1: Schema Overview 
 
 
 
 \### FACT TABLE: fact\_sales
 
-\*\*Grain:\*\* One row per product per order line item (one record per order item).  
+\*\*Grain:\*\* One row per product per order line item  
 
-\*\*Business Process:\*\* Sales transactions (order item level).
+\*\*Business Process:\*\* Sales transactions
 
 
 
 \*\*Measures (Numeric Facts):\*\*
 
-\- \*\*quantity\_sold:\*\* Number of units sold (from order\_items.quantity)
+\- \*\*quantity\_sold:\*\* Number of units sold
 
-\- \*\*unit\_price:\*\* Unit selling price at time of sale (from order\_items.unit\_price)
+\- \*\*unit\_price:\*\* Price per unit at the time of sale
 
-\- \*\*sales\_amount:\*\* Total sales amount for the line = quantity\_sold × unit\_price
+\- \*\*sales\_amount:\*\* Final sales amount (quantity\_sold × unit\_price)
 
-\- \*\*order\_total\_amount:\*\* Order header total amount (from orders.total\_amount) (optional but useful)
+\- \*\*order\_id\_nk:\*\* Natural key from OLTP for traceability
 
 
 
-\*\*Foreign Keys (Dimensions):\*\*
+\*\*Foreign Keys:\*\*
 
 \- \*\*date\_key → dim\_date\*\*
 
-\- \*\*customer\_key → dim\_customer\*\*
-
 \- \*\*product\_key → dim\_product\*\*
 
-\- \*\*order\_status\_key → dim\_order\_status\*\* (optional dimension for cleaner reporting)
+\- \*\*customer\_key → dim\_customer\*\*
+
+\- \*\*order\_status\_key → dim\_order\_status\*\*
 
 
 
@@ -44,27 +44,27 @@
 
 \### DIMENSION TABLE: dim\_date
 
-\*\*Purpose:\*\* Enables time-based reporting and aggregation.  
+\*\*Purpose:\*\* Enables time-based analysis such as daily, monthly, quarterly, and yearly trends  
 
-\*\*Type:\*\* Conformed time dimension.
+\*\*Type:\*\* Conformed time dimension
 
 
 
 \*\*Attributes:\*\*
 
-\- \*\*date\_key (PK):\*\* Surrogate key in integer format `YYYYMMDD`
+\- \*\*date\_key (PK):\*\* Surrogate key in YYYYMMDD format
 
-\- \*\*full\_date:\*\* Actual date (DATE)
+\- \*\*full\_date:\*\* Actual calendar date
 
 \- \*\*day\_of\_week:\*\* Monday, Tuesday, etc.
 
-\- \*\*month:\*\* 1–12
+\- \*\*month:\*\* Numeric month (1–12)
 
 \- \*\*month\_name:\*\* January, February, etc.
 
 \- \*\*quarter:\*\* Q1, Q2, Q3, Q4
 
-\- \*\*year:\*\* 2023, 2024, etc.
+\- \*\*year:\*\* Calendar year
 
 \- \*\*is\_weekend:\*\* Boolean flag
 
@@ -74,27 +74,53 @@
 
 
 
-\### DIMENSION TABLE: dim\_customer
+\### DIMENSION TABLE: dim\_product
 
-\*\*Purpose:\*\* Customer profiling and geographic/customer-level analysis.
+\*\*Purpose:\*\* Supports product and category-level analysis
 
 
 
 \*\*Attributes:\*\*
 
-\- \*\*customer\_key (PK):\*\* Surrogate key (auto-increment)
+\- \*\*product\_key (PK):\*\* Surrogate key
 
-\- \*\*customer\_id\_nk:\*\* Natural key from OLTP (customers.customer\_id)
+\- \*\*product\_id\_nk:\*\* Natural product ID from OLTP system
 
-\- \*\*full\_name:\*\* Customer name
+\- \*\*product\_name:\*\* Name of the product
+
+\- \*\*category:\*\* Product category (Electronics, Fashion, etc.)
+
+\- \*\*price:\*\* Reference price
+
+\- \*\*stock\_quantity:\*\* Current stock quantity
+
+
+
+---
+
+
+
+\### DIMENSION TABLE: dim\_customer
+
+\*\*Purpose:\*\* Enables customer-level and geographic analysis
+
+
+
+\*\*Attributes:\*\*
+
+\- \*\*customer\_key (PK):\*\* Surrogate key
+
+\- \*\*customer\_id\_nk:\*\* Natural customer ID from OLTP system
+
+\- \*\*full\_name:\*\* Customer full name
 
 \- \*\*email:\*\* Customer email
 
-\- \*\*phone:\*\* Customer phone
+\- \*\*phone:\*\* Customer phone number
 
 \- \*\*city:\*\* Customer city
 
-\- \*\*registration\_date:\*\* Registration date
+\- \*\*registration\_date:\*\* Date of registration
 
 
 
@@ -102,35 +128,9 @@
 
 
 
-\### DIMENSION TABLE: dim\_product
+\### DIMENSION TABLE: dim\_order\_status
 
-\*\*Purpose:\*\* Product-level analysis by category/subcategory and price bands.
-
-
-
-\*\*Attributes:\*\*
-
-\- \*\*product\_key (PK):\*\* Surrogate key (auto-increment)
-
-\- \*\*product\_id\_nk:\*\* Natural key from OLTP (products.product\_id)
-
-\- \*\*product\_name:\*\* Product name
-
-\- \*\*category:\*\* Electronics/Fashion/Groceries
-
-\- \*\*price:\*\* Current product price (reference)
-
-\- \*\*stock\_quantity:\*\* Current stock quantity (reference)
-
-
-
----
-
-
-
-\### DIMENSION TABLE: dim\_order\_status (Optional but recommended)
-
-\*\*Purpose:\*\* Cleanly analyze sales by order status without text repetition in fact.
+\*\*Purpose:\*\* Allows clean analysis by order status
 
 
 
@@ -138,7 +138,7 @@
 
 \- \*\*order\_status\_key (PK):\*\* Surrogate key
 
-\- \*\*status:\*\* Completed / Pending / Cancelled
+\- \*\*status:\*\* Order status (Completed, Pending, Cancelled)
 
 
 
@@ -146,17 +146,19 @@
 
 
 
-\## Section 2: Why a Star Schema?
+\## Section 2: Design Decisions 
 
 
 
-A star schema is optimized for analytics workloads. Dimensions store descriptive attributes, while the fact table stores measurable events (sales). This supports:
+The star schema is designed at the transaction line-item level, where each row in the fact table represents a single product sold within an order. This granularity was chosen to provide maximum analytical flexibility. It allows detailed analysis such as product-wise sales, quantity sold per product, and customer purchase behavior, while also supporting aggregated reporting at daily, monthly, or yearly levels.
 
-\- Fast aggregations (SUM, COUNT, AVG) on large fact tables
 
-\- Simple joins from fact to dimensions
 
-\- Easy reporting by time, product category, and customer attributes
+Surrogate keys are used instead of natural keys to improve query performance and simplify joins between fact and dimension tables. Natural keys from the OLTP system may change or be reused over time, whereas surrogate keys remain stable and ensure historical consistency in analytical reporting.
+
+
+
+This design supports drill-down and roll-up operations effectively. Users can roll up data from day to month or year using the date dimension, or drill down from category-level sales to individual products or customers through the respective dimension attributes.
 
 
 
@@ -164,21 +166,105 @@ A star schema is optimized for analytics workloads. Dimensions store descriptive
 
 
 
-\## Section 3: Mapping from OLTP to Data Warehouse
+\## Section 3: Sample Data Flow (3 marks)
 
 
 
-\*\*Source (OLTP) → Target (DW):\*\*
+\### Source Transaction (OLTP System)
 
-\- `orders.order\_date` → `dim\_date.full\_date` and `fact\_sales.date\_key`
 
-\- `customers.\*` → `dim\_customer.\*`
 
-\- `products.\*` → `dim\_product.\*`
+Order ID: 101  
 
-\- `orders.status` → `dim\_order\_status.status`
+Customer Name: John Doe  
 
-\- `order\_items.quantity, unit\_price, subtotal` → `fact\_sales.quantity\_sold, unit\_price, sales\_amount`
+City: Mumbai  
+
+Product: Laptop  
+
+Category: Electronics  
+
+Quantity: 2  
+
+Unit Price: 50,000  
+
+Order Date: 2024-01-15  
+
+
+
+---
+
+
+
+\### Representation in Data Warehouse
+
+
+
+\*\*fact\_sales\*\*
+
+
+
+date\_key : 20240115
+
+customer\_key : 12
+
+product\_key : 5
+
+order\_status\_key : 1
+
+quantity\_sold : 2
+
+unit\_price : 50000
+
+sales\_amount : 100000
+
+order\_id\_nk : 101
+
+
+
+
+
+\*\*dim\_date\*\*
+
+
+
+date\_key : 20240115
+
+full\_date : 2024-01-15
+
+month : 1
+
+month\_name : January
+
+quarter : Q1
+
+year : 2024
+
+
+
+\*\*dim\_product\*\*
+
+
+
+product\_key : 5
+
+product\_name : Laptop
+
+category : Electronics
+
+price : 50000
+
+
+
+\*\*dim\_customer\*\*
+
+
+
+customer\_key : 12
+
+full\_name : John Doe
+
+city : Mumbai
 
 
 
